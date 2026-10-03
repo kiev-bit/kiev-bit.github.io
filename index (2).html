@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📖 Daily Study Slides — Smart Reviewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            background-size: 300% 300%;
+            animation: flow 12s ease infinite;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        @keyframes flow {
+            0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%}
+        }
+
+        /* AUTH BOX */
+        .auth-box {
+            background: rgba(255,255,255,0.95); border-radius: 28px;
+            padding: 40px 32px; width: 100%; max-width: 440px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .auth-box h1 { text-align: center; color: #2d3436; margin-bottom: 6px; }
+        .auth-box p { text-align: center; color: #636e72; margin-bottom: 30px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #2d3436; }
+        input {
+            width: 100%; padding: 14px 18px; border: 2px solid #e0e0e0;
+            border-radius: 12px; font-size: 1rem; transition: 0.3s;
+        }
+        input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 4px rgba(102,126,234,0.15); }
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+            font-size: 1.05rem; font-weight: bold; cursor: pointer; transition: 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .hint { color: #636e72; font-size: 0.85rem; margin-top: 10px; text-align: center; }
+        .error { color: #e74c3c; text-align: center; margin-top: 15px; display: none; font-weight: 500; }
+
+        /* MAIN DASHBOARD */
+        .dashboard {
+            display: none; width: 100%; max-width: 1100px; background: white;
+            border-radius: 28px; padding: 35px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+        .logout { padding: 10px 24px; background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+
+        /* SUBJECT TABS */
+        .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 25px; }
+        .tab {
+            padding: 12px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;
+            transition: all 0.3s;
+            background: #e2e8f0; color: #475569;
+        }
+        .tab.active { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .tab.math { background: linear-gradient(135deg, #f59e0b, #facc15); color: #1e293b; }
+        .tab.science { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
+        .tab.english { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: white; }
+        .tab.filipino { background: linear-gradient(135deg, #ef4444, #f87171); color: white; }
+        .tab.ap { background: linear-gradient(135deg, #8b5cf6, #a78bfa); color: white; }
+        .tab.todo { background: linear-gradient(135deg, #6366f1, #818cf8); color: white; }
+
+        /* SLIDES CONTAINER */
+        .slides-wrapper {
+            background: linear-gradient(135deg, #f8fafc, #eef2ff);
+            border-radius: 20px; padding: 30px; min-height: 450px; position: relative;
+            border: 3px solid #e0e7ff;
+        }
+        .daily-badge {
+            position: absolute; top: 15px; right: 20px;
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #1e293b; padding: 8px 16px; border-radius: 30px; font-weight: bold; font-size: 0.9rem;
+        }
+        .slide-content { display: none; animation: fadeIn 0.4s ease; }
+        .slide-content.active { display: block; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+
+        .slide-number { color: #94a3b8; font-size: 0.9rem; margin-bottom: 10px; }
+        .slide-title { font-size: 1.8rem; color: #1e293b; margin-bottom: 20px; }
+        .slide-subtitle { font-size: 1.1rem; color: #475569; margin-bottom: 25px; font-style: italic; }
+        .slide-body { font-size: 1.05rem; line-height: 1.8; color: #334155; }
+        .slide-body ul { margin: 15px 0; padding-left: 25px; }
+        .slide-body li { margin: 10px 0; }
+        .highlight { background: #fef3c7; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
+        .key-box {
+            background: white; border-left: 4px solid #6366f1;
+            padding: 18px; border-radius: 10px; margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .key-box h4 { color: #4f46e5; margin-bottom: 8px; }
+
+        /* NAVIGATION */
+        .slide-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
+        .nav-btn {
+            padding: 12px 24px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;
+            background: #e2e8f0; color: #475569; transition: 0.3s;
+        }
+        .nav-btn:hover { background: #cbd5e1; }
+        .nav-btn.primary { background: linear-gradient(135deg, #6366f1, #7c3aed); color: white; }
+        .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        /* WISDOM & TASKS */
+        .wisdom {
+            background: linear-gradient(135deg, #fff9e6, #fff3cd); border-left: 5px solid #f59e0b;
+            border-radius: 16px; padding: 22px; margin: 25px 0;
+        }
+        .tasks-section { background: #f8fafc; border-radius: 16px; padding: 22px; margin-top: 20px; }
+        .task { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: white; border-radius: 8px; margin: 8px 0; border-left: 4px solid #6366f1; }
+        .task-done { text-decoration: line-through; color: #94a3b8; border-left-color: #10b981; }
+        .del { background: #f87171; color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+        .add-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; background: #6366f1; color: white; cursor: pointer; margin-top: 10px; }
+        input#taskInput { margin-top: 10px; width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN / SETUP -->
+    <div class="auth-box" id="authBox">
+        <h1 id="authTitle">📖 Daily Study Slides</h1>
+        <p id="authSub">Your personal reviewer — new lesson every day!</p>
+
+        <div class="input-group">
+            <label>📧 Email / Username</label>
+            <input type="text" id="userEmail" placeholder="Your name or email">
+        </div>
+
+        <div class="input-group">
+            <label>🔒 Password</label>
+            <input type="password" id="userPass" placeholder="Your password">
+        </div>
+
+        <button class="btn" id="authBtn" onclick="handleAuth()">✨ Create & Enter</button>
+        <p class="hint" id="hint">First time? Type anything — it saves as your login!</p>
+        <p class="error" id="errMsg">❌ Wrong — check & try again</p>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div class="dashboard" id="dash">
+        <div class="top-bar">
+            <div>
+                <h2>📚 Daily Reviewer — <span id="todayDate"></span></h2>
+                <p style="color:#636e72; font-size:0.9rem;" id="showUser"></p>
+            </div>
+            <button class="logout" onclick="logout()">🚪 Logout</button>
+        </div>
+
+        <!-- SUBJECT TABS -->
+        <div class="tabs">
+            <button class="tab math active" data-subject="math">📐 Math</button>
+            <button class="tab science" data-subject="science">🔬 Science</button>
+            <button class="tab english" data-subject="english">📝 English</button>
+            <button class="tab filipino" data-subject="filipino">🇵🇭 Filipino</button>
+            <button class="tab ap" data-subject="ap">🌏 Araling Panlipunan</button>
+            <button class="tab todo" data-subject="todo">✅ Tasks</button>
+        </div>
+
+        <!-- SLIDES AREA -->
+        <div class="slides-wrapper" id="slidesArea">
+            <div class="daily-badge">🌟 Daily Lesson</div>
+
+            <!-- MATH SLIDES -->
+            <div id="math-content" class="subject-content">
+                <div class="slide-content active">
+                    <p class="slide-number">Lesson 1 of 5 • Day 1</p>
+                    <h3 class="slide-title">🔢 Algebraic Expressions</h3>
+                    <p class="slide-subtitle">Building blocks of higher math</p>
+                    <div class="slide-body">
+                        <p>An <span class="highlight">algebraic expression</span> contains numbers, variables & operations.</p>
+                        <div class="key-box">
+                            <h4>Parts:</h4>
+                            <ul>
+                                <li><strong>Variable</strong> — letter (x, y, a)</li>
+                                <li><strong>Coefficient</strong> — number with variable (5 in 5x)</li>
+                                <li><strong>Constant</strong> — fixed number (+7 in 3x+7)</li>
+                            </ul>
+                        </div>
+                        <p><strong>Example:</strong> 3x² − 5y + 8</p>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 2 of 5 • Day 2</p>
+                    <h3 class="slide-title">📐 Laws of Exponents</h3>
+                    <p class="slide-subtitle">Shortcuts for powers</p>
+                    <div class="slide-body">
+                        <div class="key-box"><h4>Product Rule</h4><p>aᵐ × aⁿ = aᵐ⁺ⁿ</p><p>Same base → ADD exponents</p></div>
+                        <div class="key-box"><h4>Quotient Rule</h4><p>aᵐ ÷ aⁿ = aᵐ⁻ⁿ</p><p>Same base → SUBTRACT exponents</p></div>
+                        <div class="key-box"><h4>Power Rule</h4><p>(aᵐ)ⁿ = aᵐ×ⁿ</p><p>Power of power → MULTIPLY exponents</p></div>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 3 of 5 • Day 3</p>
+                    <h3 class="slide-title">📏 Linear Equations</h3>
+                    <p class="slide-subtitle">Finding the unknown</p>
+                    <div class="slide-body">
+                        <p>Equation has <span class="highlight">=</span> — both sides must balance!</p>
+                        <div class="key-box">
+                            <h4>Steps:</h4>
+                            <ol><li>Simplify</li><li>Isolate variable</li><li>Do same to BOTH sides</li><li>Check answer</li></ol>
+                        </div>
+                        <p><strong>Example:</strong> 2x + 5 = 15 → 2x = 10 → <strong>x = 5</strong> ✅</p>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 4 of 5 • Day 4</p>
+                    <h3 class="slide-title">📐 Pythagorean Theorem</h3>
+                    <p class="slide-subtitle">Right triangles only!</p>
+                    <div class="slide-body">
+                        <div class="key-box">
+                            <h4>Formula: a² + b² = c²</h4>
+                            <ul>
+                                <li>a, b = legs (shorter sides)</li>
+                                <li>c = hypotenuse (longest side)</li>
+                            </ul>
+                        </div>
+                        <p>Example: 3² + 4² = 9 + 16 = 25 → c = 5 ✅</p>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 5 of 5 • Day 5</p>
+                    <h3 class="slide-title">📊 Functions</h3>
+                    <p class="slide-subtitle">Each input → ONE output</p>
+                    <div class="slide-body">
+                        <div class="key-box">
+                            <h4>Terms:</h4>
+                            <ul>
+                                <li><strong>Domain</strong> = all x-values (inputs)</li>
+                                <li><strong>Range</strong> = all y-values (outputs)</li>
+                                <li><strong>f(x)</strong> = "f of x" = same as y</li>
+                            </ul>
+                        </div>
+                        <p>f(x) = 2x + 3 → if x=2, then f(2)=7 ✅</p>
+                    </div>
+                </div>
+                <div class="slide-nav">
+                    <button class="nav-btn" id="mathPrev">← Previous</button>
+                    <span id="mathCounter">1 / 5</span>
+                    <button class="nav-btn primary" id="mathNext">Next →</button>
+                </div>
+            </div>
+
+            <!-- SCIENCE SLIDES -->
+            <div id="science-content" class="subject-content" style="display:none;">
+                <div class="slide-content active">
+                    <p class="slide-number">Lesson 1 of 5 • Day 1</p>
+                    <h3 class="slide-title">⚛️ Matter</h3>
+                    <p class="slide-subtitle">Mass + Volume = Matter</p>
+                    <div class="slide-body">
+                        <div class="key-box">
+                            <h4>Physical vs Chemical:</h4>
+                            <ul>
+                                <li><strong>Physical</strong> → same substance, different look (melting, cutting)</li>
+                                <li><strong>Chemical</strong> → NEW substance formed (burning, rusting)</li>
+                            </ul>
+                        </div>
+                        <p><strong>3 States:</strong></p>
+                        <ul>
+                            <li>🔹 Solid — fixed shape & volume</li>
+                            <li>🔹 Liquid — fixed volume, takes container shape</li>
+                            <li>🔹 Gas — no fixed shape/volume</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 2 of 5 • Day 2</p>
+                    <h3 class="slide-title">💨 Elements & Compounds</h3>
+                    <p class="slide-subtitle">Pure vs Mixed</p>
+                    <div class="slide-body">
+                        <div class="key-box">
+                            <h4>Pure Substances:</h4>
+                            <ul>
+                                <li><strong>Element</strong> — one type of atom only (O, C, Fe)</li>
+                                <li><strong>Compound</strong> — 2+ elements bonded (H₂O, CO₂)</li>
+                            </ul>
+                        </div>
+                        <div class="key-box">
+                            <h4>Mixtures:</h4>
+                            <ul>
+                                <li><strong>Homogeneous</strong> — uniform throughout (salt water)</li>
+                                <li><strong>Heterogeneous</strong> — visible different parts (sand + water)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 3 of 5 • Day 3</p>
+                    <h3 class="slide-title">⚡ Force & Motion</h3>
+                    <p class="slide-subtitle">Newton's 3 Laws</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>1st — Inertia:</strong> things keep doing what they're doing until forced to change</li>
+                            <li><strong>2nd — F = ma:</strong> Force = mass × acceleration</li>
+                            <li><strong>3rd — Action-Reaction:</strong> every action has equal opposite reaction</li>
+                        </ul>
+                        <p><strong>Speed</strong> = distance ÷ time</p>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 4 of 5 • Day 4</p>
+                    <h3 class="slide-title">🔋 Energy</h3>
+                    <p class="slide-subtitle">Never created — only transformed</p>
+                    <div class="slide-body">
+                        <div class="key-box">
+                            <h4>Two Main Types:</h4>
+                            <ul>
+                                <li><strong>Potential</strong> — stored (position, chemical)</li>
+                                <li><strong>Kinetic</strong> — motion (faster = more KE)</li>
+                            </ul>
+                        </div>
+                        <p>Examples: Sun → solar panel → electricity → light 💡</p>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 5 of 5 • Day 5</p>
+                    <h3 class="slide-title">🧬 The Cell</h3>
+                    <p class="slide-subtitle">Basic unit of life</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li>🧠 <strong>Nucleus</strong> — control center, has DNA</li>
+                            <li>⚡ <strong>Mitochondria</strong> — makes energy</li>
+                            <li>🚪 <strong>Membrane</strong> — controls what enters/leaves</li>
+                            <li>🌿 <strong>Chloroplast</strong> — plants only! makes food via sunlight</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-nav">
+                    <button class="nav-btn" id="sciencePrev">← Previous</button>
+                    <span id="scienceCounter">1 / 5</span>
+                    <button class="nav-btn primary" id="scienceNext">Next →</button>
+                </div>
+            </div>
+
+            <!-- ENGLISH SLIDES -->
+            <div id="english-content" class="subject-content" style="display:none;">
+                <div class="slide-content active">
+                    <p class="slide-number">Lesson 1 of 5 • Day 1</p>
+                    <h3 class="slide-title">📝 Parts of Speech</h3>
+                    <p class="slide-subtitle">8 building blocks</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Noun</strong> — person/place/thing → teacher, Manila</li>
+                            <li><strong>Pronoun</strong> — replaces noun → I, you, they</li>
+                            <li><strong>Verb</strong> — action/state → run, is</li>
+                            <li><strong>Adjective</strong> — describes noun → beautiful, red</li>
+                            <li><strong>Adverb</strong> — describes verb → quickly, very</li>
+                            <li><strong>Preposition</strong> — position → in, on, under</li>
+                            <li><strong>Conjunction</strong> — connects → and, but, because</li>
+                            <li><strong>Interjection</strong> — emotion → Wow!</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 2 of 5 • Day 2</p>
+                    <h3 class="slide-title">📖 Sentence Structure</h3>
+                    <p class="slide-subtitle">Subject + Predicate</p>
+                    <div class="slide-body">
+                        <div class="key-box">
+                            <h4>4 Types:</h4>
+                            <ul>
+                                <li><strong>Declarative</strong> — statement .</li>
+                                <li><strong>Interrogative</strong> — question ?</li>
+                                <li><strong>Imperative</strong> — command . / !</li>
+                                <li><strong>Exclamatory</strong> — emotion !</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 3 of 5 • Day 3</p>
+                    <h3 class="slide-title">⏰ Verb Tenses</h3>
+                    <p class="slide-subtitle">Past • Present • Future</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Present</strong> — happens now → walks</li>
+                            <li><strong>Past</strong> — already done → walked</li>
+                            <li><strong>Future</strong> — will happen → will walk</li>
+                            <li><strong>Progressive</strong> — ongoing → am walking, was walking</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 4 of 5 • Day 4</p>
+                    <h3 class="slide-title">✨ Figures of Speech</h3>
+                    <p class="slide-subtitle">Make writing vivid!</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Simile</strong> — like / as → brave as lion</li>
+                            <li><strong>Metaphor</strong> — direct → time is gold</li>
+                            <li><strong>Personification</strong> — human traits → wind whispered</li>
+                            <li><strong>Hyperbole</strong> — exaggeration → million times</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Lesson 5 of 5 • Day 5</p>
+                    <h3 class="slide-title">✍️ Paragraph Writing</h3>
+                    <p class="slide-subtitle">Topic + Details + Conclusion</p>
+                    <div class="slide-body">
+                        <ol>
+                            <li><strong>Topic Sentence</strong> — main idea</li>
+                            <li><strong>Supporting Sentences</strong> — facts & examples</li>
+                            <li><strong>Concluding Sentence</strong> — wrap it up</li>
+                        </ol>
+                        <p>Transitions: First, Also, However, Finally</p>
+                    </div>
+                </div>
+                <div class="slide-nav">
+                    <button class="nav-btn" id="englishPrev">← Previous</button>
+                    <span id="englishCounter">1 / 5</span>
+                    <button class="nav-btn primary" id="englishNext">Next →</button>
+                </div>
+            </div>
+
+            <!-- FILIPINO SLIDES -->
+            <div id="filipino-content" class="subject-content" style="display:none;">
+                <div class="slide-content active">
+                    <p class="slide-number">Araw 1 ng 5</p>
+                    <h3 class="slide-title">🇵🇭 Bahagi ng Pananalita</h3>
+                    <p class="slide-subtitle">Pundasyon ng wikang Filipino</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Pangngalan</strong> — ngalan → Juan, Maynila</li>
+                            <li><strong>Panghalip</strong> — pamalit → ako, ikaw, siya</li>
+                            <li><strong>Pandiwa</strong> — salitang-kilos → tumakbo</li>
+                            <li><strong>Pang-uri</strong> — naglalarawan sa pangngalan → maganda</li>
+                            <li><strong>Pang-abay</strong> — naglalarawan sa kilos → mabilis</li>
+                            <li><strong>Pangatnig</strong> — nag-uugnay → at, ngunit</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 2 ng 5</p>
+                    <h3 class="slide-title">📝 Ang Pangungusap</h3>
+                    <p class="slide-subtitle">Simuno + Panaguri</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Simuno</strong> — pinag-uusapan → <em>Ang bata</em> ay nagbabasa</li>
+                            <li><strong>Panaguri</strong> — sinasabi → Ang bata ay <em>nagbabasa</em></li>
+                            <li><strong>Karaniwan</strong> — nauuna ang kilos → Nagbabasa ang bata</li>
+                            <li><strong>Di-karaniwan</strong> — nauuna ang simuno + "ay"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 3 ng 5</p>
+                    <h3 class="slide-title">⏰ Aspekto ng Pandiwa</h3>
+                    <p class="slide-subtitle">Kailan ginawa?</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Naganap</strong> — tapos na → nagsulat</li>
+                            <li><strong>Nagaganap</strong> — ginagawa → nagsusulat</li>
+                            <li><strong>Magaganap</strong> — gagawin pa → magsusulat</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 4 ng 5</p>
+                    <h3 class="slide-title">✨ Talinghaga</h3>
+                    <p class="slide-subtitle">Matalinghagang salita</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Balat-sibuyas</strong> — maramdamin</li>
+                            <li><strong>Bukas-palad</strong> — matulungin</li>
+                            <li><strong>Ilaw ng tahanan</strong> — ina</li>
+                            <li><strong>Haligi ng tahanan</strong> — ama</li>
+                            <li><strong>Magaan ang kamay</strong> — masipag</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 5 ng 5</p>
+                    <h3 class="slide-title">📜 Maikling Kwento</h3>
+                    <p class="slide-subtitle">5 Bahagi</p>
+                    <div class="slide-body">
+                        <ol>
+                            <li><strong>Panimula</strong> — pagpapakilala</li>
+                            <li><strong>Saglit na Kasiglahan</strong> — paghahanda sa suliranin</li>
+                            <li><strong>Kasukdulan</strong> — pinakamataas na kapanabikan</li>
+                            <li><strong>Kakalasan</strong> — paglutas</li>
+                            <li><strong>Wakas</strong> — katapusan</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="slide-nav">
+                    <button class="nav-btn" id="filipinoPrev">← Previous</button>
+                    <span id="filipinoCounter">1 / 5</span>
+                    <button class="nav-btn primary" id="filipinoNext">Next →</button>
+                </div>
+            </div>
+
+            <!-- AP SLIDES -->
+            <div id="ap-content" class="subject-content" style="display:none;">
+                <div class="slide-content active">
+                    <p class="slide-number">Araw 1 ng 5</p>
+                    <h3 class="slide-title">🌏 Heograpiya ng Pilipinas</h3>
+                    <p class="slide-subtitle">Lokasyon at anyo</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li>📍 Nasa <strong>Timog-Silangang Asya</strong></li>
+                            <li>🌊 Arkipelago — mahigit 7,641 pulo</li>
+                            <li>🏝️ Tatlong Pangkat: Luzon, Visayas, Mindanao</li>
+                            <li>☀️ Tropikal — mainit at tag-ulan</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 2 ng 5</p>
+                    <h3 class="slide-title">⛰️ Likas na Yaman</h3>
+                    <p class="slide-subtitle">Kayamanan ng ating bayan</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Yamang Lupa</strong> — palay, niyog, prutas</li>
+                            <li><strong>Yamang Tubig</strong> — isda, dagat, korales</li>
+                            <li><strong>Yamang Mineral</strong> — ginto, tanso, bakal</li>
+                            <li><strong>Yamang Gubat</strong> — kahoy, halamang gamot</li>
+                            <li><strong>Yamang Tao</strong> — PINAKAMAHALAGA — lakas at talino</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 3 ng 5</p>
+                    <h3 class="slide-title">👥 Mga Unang Pilipino</h3>
+                    <p class="slide-subtitle">Sino ang nauna?</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Negrito/Aeta</strong> — pinakauna; gubat, pangangaso</li>
+                            <li><strong>Indones</strong> — pagtatanim, paggawa ng bangka</li>
+                            <li><strong>Malay</strong> — pinakamarami; kalakalan, barangay, datu</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 4 ng 5</p>
+                    <h3 class="slide-title">⚖️ Karapatang Pantao</h3>
+                    <p class="slide-subtitle">Para sa bawat Pilipino</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li>Karapatang mabuhay, mag-aral, magsalita</li>
+                            <li>Karapatan sa pagkakapantay-pantay</li>
+                            <li>May kaakibat na tungkulin — karapatan ≠ kalayaan gumawa ng masama</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-content">
+                    <p class="slide-number">Araw 5 ng 5</p>
+                    <h3 class="slide-title">🤝 Pagkakaisa</h3>
+                    <p class="slide-subtitle">Bayanihan at pagtutulungan</p>
+                    <div class="slide-body">
+                        <ul>
+                            <li><strong>Bayanihan</strong> — pagtutulungan nang walang hinihintay na kapalit</li>
+                            <li>Respeto sa pagkakaiba-iba ng kultura</li>
+                            <li>Pagmamahal sa bayan = pagsunod sa batas, pagtulong sa kapwa</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="slide-nav">
+                    <button class="nav-btn" id="apPrev">← Previous</button>
+                    <span id="apCounter">1 / 5</span>
+                    <button class="nav-btn primary" id="apNext">Next →</button>
+                </div>
+            </div>
+
+            <!-- TASKS CONTENT -->
+            <div id="todo-content" class="subject-content" style="display:none;">
+                <div class="wisdom">
+                    <h3>💡 Daily Wisdom</h3>
+                    <ul style="margin-top:10px;">
+                        <li>Grades don't define you — effort does 💛</li>
+                        <li>30 mins daily > 5 hrs cramming 📈</li>
+                        <li>Review within 24 hrs → remember 80% longer 🧠</li>
+                        <li>Sleep well — your brain learns while you rest 😴</li>
+                        <li>Explain it simply = you truly get it ✨</li>
+                    </ul>
+                </div>
+                <div class="tasks-section">
+                    <h3>📋 Assignments & Tasks</h3>
+                    <input type="text" id="taskInput" placeholder="Add new task...">
+                    <button class="add-btn" onclick="addTask()">➕ Add Task</button>
+                    <button class="add-btn" style="background:#ef4444;" onclick="clearDoneTasks()">🗑️ Clear Done</button>
+                    <div id="taskList" style="margin-top:15px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ============= LOGIN =============
+function isFirstTime() { return !localStorage.getItem('hubEmail'); }
+
+function updateAuthUI() {
+    if (isFirstTime()) {
+        document.getElementById('authTitle').textContent = '📖 Set Your Study Hub';
+        document.getElementById('authSub').textContent = 'Create your login below';
+        document.getElementById('authBtn').textContent = '✨ Create & Enter';
+        document.getElementById('hint').style.display = 'block';
+    } else {
+        document.getElementById('authTitle').textContent = '📖 Login to Study Hub';
+        document.getElementById('authSub').textContent = 'Enter your details';
+        document.getElementById('authBtn').textContent = '🚀 Enter Hub';
+        document.getElementById('hint').style.display = 'none';
+    }
+}
+
+function handleAuth() {
+    const email = document.getElementById('userEmail').value.trim();
+    const pass = document.getElementById('userPass').value;
+    if (!email || !pass) { alert('Fill in both fields!'); return; }
+
+    if (isFirstTime()) {
+        localStorage.setItem('hubEmail', email);
+        localStorage.setItem('hubPass', pass);
+        enterDashboard(email);
+    } else {
+        if (email === localStorage.getItem('hubEmail') && pass === localStorage.getItem('hubPass')) {
+            enterDashboard(email);
+        } else {
+            document.getElementById('errMsg').style.display = 'block';
+        }
+    }
+}
+
+function enterDashboard(email) {
+    document.getElementById('authBox').style.display = 'none';
+    document.getElementById('dash').style.display = 'block';
+    document.getElementById('showUser').textContent = email;
+    const d = new Date();
+    document.getElementById('todayDate').textContent = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+    loadTasks();
+    initSlides();
+}
+
+function logout() {
+    document.getElementById('authBox').style.display = 'block';
+    document.getElementById('dash').style.display = 'none';
+    document.getElementById('userEmail').value = '';
+    document.getElementById('userPass').value = '';
+    document.getElementById('errMsg').style.display = 'none';
+    updateAuthUI();
+}
+
+// ============= SLIDE NAVIGATION SYSTEM =============
+const slideState = {
+    currentSubject: 'math',
+    mathIndex: 0,
+    scienceIndex: 0,
+    englishIndex: 0,
+    filipinoIndex: 0,
+    apIndex: 0
+};
+
+function initSlides() {
+    // Tab clicks
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const subj = tab.dataset.subject;
+            switchSubject(subj);
+        });
+    });
+
+    // Math nav
+    document.getElementById('mathPrev').addEventListener('click', () => navigateSlide('math', -1));
+    document.getElementById('mathNext').addEventListener('click', () => navigateSlide('math', 1));
+    // Science nav
+    document.getElementById('sciencePrev').addEventListener('click', () => navigateSlide('science', -1));
+    document.getElementById('scienceNext').addEventListener('click', () => navigateSlide('science', 1));
+    // English nav
+    document.getElementById('englishPrev').addEventListener('click', () => navigateSlide('english', -1));
+    document.getElementById('englishNext').addEventListener('click', () => navigateSlide('english', 1));
+    // Filipino nav
+    document.getElementById('filipinoPrev').addEventListener('click', () => navigateSlide('filipino', -1));
+    document.getElementById('filipinoNext').addEventListener('click', () => navigateSlide('filipino', 1));
+    // AP nav
+    document.getElementById('apPrev').addEventListener('click', () => navigateSlide('ap', -1));
+    document.getElementById('apNext').addEventListener('click', () => navigateSlide('ap', 1));
+
+    updateSlideUI('math');
+}
+
+function switchSubject(subject) {
+    slideState.currentSubject = subject;
+    // Update tabs
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`[data-subject="${subject}"]`).classList.add('active');
+    // Show content
+    document.querySelectorAll('.subject-content').forEach(c => c.style.display = 'none');
+    if (subject === 'todo') {
+        document.getElementById('todo-content').style.display = 'block';
+    } else {
+        document.getElementById(`${subject}-content`).style.display = 'block';
+        updateSlideUI(subject);
+    }
+}
+
+function navigateSlide(subject, dir) {
+    const idxKey = `${subject}Index`;
+    const slides = document.querySelectorAll(`#${subject}-content .slide-content`);
+    const total = slides.length;
+    
+    slideState[idxKey] += dir;
+    if (slideState[idxKey] < 0) slideState[idxKey] = total - 1;
+    if (slideState[idxKey] >= total) slideState[idxKey] = 0;
+    
+    updateSlideUI(subject);
+}
+
+function updateSlideUI(subject) {
+    const idxKey = `${subject}Index`;
+    const currentIdx = slideState[idxKey];
+    const slides = document.querySelectorAll(`#${subject}-content .slide-content`);
+    const total = slides.length;
+
+    slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === currentIdx);
+    });
+
+    const counter = document.getElementById(`${subject}Counter`);
+    if (counter) counter.textContent = `${currentIdx + 1} / ${total}`;
+}
+
+// ============= TASKS SYSTEM =============
+function addTask() {
+    const input = document.getElementById('taskInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const list = document.getElementById('taskList');
+    const item = document.createElement('div');
+    item.className = 'task';
+    item.innerHTML = `
+        <span onclick="toggleTask(this)">${text}</span>
+        <button class="del" onclick="this.parentElement.remove(); saveTasks()">✕</button>
+    `;
+    list.appendChild(item);
+    input.value = '';
+    saveTasks();
+}
+
+function toggleTask(el) {
+    el.classList.toggle('task-done');
+    el.parentElement.classList.toggle('task-done');
+    saveTasks();
+}
+
+function clearDoneTasks() {
+    document.querySelectorAll('#taskList .task-done').forEach(t => t.remove());
+    saveTasks();
+}
+
+function saveTasks() {
+    const items = [];
+    document.querySelectorAll('#taskList .task').forEach(t => {
+        items.push({
+            text: t.querySelector('span').textContent,
+            done: t.querySelector('span').classList.contains('task-done')
+        });
+    });
+    localStorage.setItem('reviewerTasks', JSON.stringify(items));
+}
+
+function loadTasks() {
+    const saved = JSON.parse(localStorage.getItem('reviewerTasks') || '[]');
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+    saved.forEach(task => {
+        const item = document.createElement('div');
+        item.className = 'task' + (task.done ? ' task-done' : '');
+        item.innerHTML = `
+            <span onclick="toggleTask(this)" class="${task.done?'task-done':''}">${task.text}</span>
+            <button class="del" onclick="this.parentElement.remove(); saveTasks()">✕</button>
+        `;
+        list.appendChild(item);
+    });
+}
+
+// Enter key login
+document.addEventListener('keypress', e => {
+    if (e.key === 'Enter' && document.getElementById('authBox').style.display !== 'none') {
+        handleAuth();
+    }
+});
+
+updateAuthUI();
+</script>
+</body>
+</html>
+
